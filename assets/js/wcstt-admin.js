@@ -70,6 +70,27 @@
     // Store original label.
     $addBtn.data('label', $addBtn.text());
 
+    /* ---- Auto-refresh after order note is added (picks up parser imports) ---- */
+
+    $(document).ajaxComplete(function (event, xhr, settings) {
+        // WooCommerce fires AJAX "add_order_note" when a note is saved.
+        if (!settings || !settings.data || typeof settings.data !== 'string') return;
+        if (settings.data.indexOf('action=woocommerce_add_order_note') === -1) return;
+
+        // Small delay to let server-side parser finish writing tracking meta.
+        setTimeout(function () {
+            $.post(wcsttAdmin.ajaxUrl, {
+                action:   'wcstt_get_tracking_items_html',
+                nonce:    wcsttAdmin.nonce,
+                order_id: wcsttAdmin.orderId
+            }).done(function (res) {
+                if (res.success && res.data.html) {
+                    $items.html(res.data.html);
+                }
+            });
+        }, 500);
+    });
+
     /* ---- Delete tracking (AJAX, delegated) ---- */
 
     $items.on('click', '.wcstt-delete', function (e) {

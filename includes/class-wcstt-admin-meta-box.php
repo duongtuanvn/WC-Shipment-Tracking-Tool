@@ -18,6 +18,7 @@ class WCSTT_Admin_Meta_Box {
         // AJAX handlers.
         add_action('wp_ajax_wcstt_add_tracking', [$this, 'ajax_add_tracking']);
         add_action('wp_ajax_wcstt_delete_tracking', [$this, 'ajax_delete_tracking']);
+        add_action('wp_ajax_wcstt_get_tracking_items_html', [$this, 'ajax_get_tracking_items_html']);
     }
 
     /* ------------------------------------------------------------------
@@ -194,6 +195,33 @@ class WCSTT_Admin_Meta_Box {
         }
 
         wp_send_json_success();
+    }
+
+    /* ------------------------------------------------------------------
+     * AJAX: get all tracking items HTML (for live refresh after note parse)
+     * ----------------------------------------------------------------*/
+
+    public function ajax_get_tracking_items_html(): void {
+        check_ajax_referer('wcstt_tracking', 'nonce');
+
+        if (! current_user_can('edit_shop_orders')) {
+            wp_send_json_error(['message' => __('Permission denied.', 'wc-shipment-tracking-tool')]);
+        }
+
+        $order_id = absint($_POST['order_id'] ?? 0);
+        $items    = WCSTT_Tracking_Repository::get_tracking_items($order_id);
+
+        ob_start();
+        if (! empty($items)) {
+            foreach ($items as $item) {
+                $this->render_item_row($item);
+            }
+        } else {
+            echo '<p class="wcstt-empty">' . esc_html__('No tracking numbers yet.', 'wc-shipment-tracking-tool') . '</p>';
+        }
+        $html = ob_get_clean();
+
+        wp_send_json_success(['html' => $html]);
     }
 
     /* ------------------------------------------------------------------
