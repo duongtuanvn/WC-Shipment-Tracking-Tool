@@ -1,0 +1,96 @@
+/**
+ * Admin meta-box styles for WC Shipment Tracking Tool.
+ */
+
+/* Existing tracking items */
+#wcstt-items {
+    margin-bottom: 12px;
+}
+
+.wcstt-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 13px;
+    line-height: 1.4;
+    flex-wrap: wrap;
+}
+
+.wcstt-item:last-child {
+    border-bottom: none;
+}
+
+.wcstt-item-provider {
+    font-weight: 600;
+}
+
+.wcstt-item-provider::after {
+    content: ":";
+}
+
+.wcstt-item-date {
+    color: #888;
+    font-size: 12px;
+}
+
+.wcstt-item a {
+    color: #0073aa;
+    text-decoration: none;
+}
+
+.wcstt-item a:hover {
+    text-decoration: underline;
+}
+
+.wcstt-delete {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: #a00;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 4px;
+    flex-shrink: 0;
+}
+
+.wcstt-delete:hover {
+    color: #dc3232;
+}
+
+.wcstt-empty {
+    color: #888;
+    font-style: italic;
+    margin: 0;
+    padding: 8px 0;
+}
+
+/* Add-tracking form */
+#wcstt-add-form {
+    border-top: 1px solid #ddd;
+    padding-top: 12px;
+}
+
+#wcstt-add-form p {
+    margin: 0 0 8px;
+}
+
+.wcstt-field {
+    display: block;
+    width: 100%;
+    margin-bottom: 8px;
+    box-sizing: border-box;
+}
+
+#wcstt-add-btn {
+    width: 100%;
+    text-align: center;
+}
+
+/* Spinner */
+#wcstt-add-form .spinner {
+    float: none;
+    margin: 0 8px;
+}
