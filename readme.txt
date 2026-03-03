@@ -8,46 +8,48 @@ Stable tag: 1.1.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Add shipment tracking numbers to WooCommerce orders with PayPal sync and auto-import from order notes. Compatible with the official Shipment Tracking extension data format.
+Them ma van don (tracking) vao don hang WooCommerce voi dong bo PayPal va tu dong nhan dien tu order notes. Tuong thich dinh dang du lieu cua extension Shipment Tracking chinh thuc.
 
-== Description ==
+== Mo ta ==
 
-WC Shipment Tracking Tool lets you add one or more tracking numbers to any WooCommerce order. Tracking information is automatically included in customer emails and displayed on the My Account order page.
+WC Shipment Tracking Tool cho phep them mot hoac nhieu ma van don vao bat ky don hang WooCommerce nao. Thong tin tracking tu dong hien thi trong email gui khach hang va trang My Account cua khach.
 
-**Data compatible** with the official WooCommerce Shipment Tracking extension (`_wc_shipment_tracking_items` meta key).
+**Tuong thich du lieu** voi extension WooCommerce Shipment Tracking chinh thuc (meta key `_wc_shipment_tracking_items`).
 
-= Features =
+= Tinh nang chinh =
 
-* Add multiple tracking numbers per order
-* Predefined US carriers: USPS, FedEx, UPS, DHL, DHL eCommerce, Amazon Logistics, OnTrac, LaserShip, Stamps.com
-* Custom provider support with custom tracking URLs
-* Tracking info injected into all customer emails (HTML + plain text)
-* Tracking table on My Account → View Order page
-* REST API (v3) for programmatic access
-* HPOS (High Performance Order Storage) compatible
-* Anti-duplicate tracking number protection
-* Extensible provider list via filters
+* Them nhieu ma van don cho moi don hang
+* 9 hang van chuyen My co san: USPS, FedEx, UPS, DHL, DHL eCommerce, Amazon Logistics, OnTrac, LaserShip, Stamps.com
+* Ho tro hang van chuyen tu dinh nghia voi URL tracking tuy chinh
+* Tu dong chen tracking vao tat ca email gui khach hang (HTML + plain text)
+* Hien thi bang tracking tren trang My Account → Xem don hang
+* REST API (v3) de truy cap tu dong (lap trinh)
+* Tuong thich HPOS (High Performance Order Storage)
+* Chong trung lap ma van don
+* Danh sach hang van chuyen mo rong duoc qua filters
+* Meta box cap nhat tuc thi khi them tracking tu order notes (khong can reload trang)
 
-= PayPal Tracking Sync =
+= Dong bo Tracking len PayPal =
 
-Automatically push tracking numbers to PayPal when added to an order. PayPal Seller Protection requires tracking info — this feature handles it automatically.
+Tu dong day ma van don len PayPal khi them vao don hang. PayPal Seller Protection yeu cau thong tin tracking — tinh nang nay xu ly tu dong.
 
-* Uses PayPal REST API v1 (Shipping Trackers Batch)
-* OAuth2 authentication with token caching
-* Auto-maps carriers (USPS, FedEx, UPS, DHL, etc.)
-* Cancels tracking on PayPal when removed locally
-* Works with WooCommerce PayPal Payments (PPCP), PayPal Standard, and other PayPal gateways
-* Skips non-PayPal orders automatically
-* Logs sync status to private order notes
+* Su dung PayPal REST API v1 (Shipping Trackers Batch)
+* Xac thuc OAuth2 voi cache token
+* Tu dong map hang van chuyen (USPS, FedEx, UPS, DHL, v.v.)
+* Huy tracking tren PayPal khi xoa tracking cuc bo
+* Hoat dong voi WooCommerce PayPal Payments (PPCP), PayPal Standard, va cac gateway PayPal khac
+* Tu dong bo qua don hang khong thanh toan qua PayPal
+* Ghi log trang thai dong bo vao order notes (rieng tu)
 
-= Order Notes Parser =
+= Nhan dien Tracking tu Order Notes =
 
-Automatically detect and import tracking numbers from WooCommerce order notes — useful when staff or other plugins add tracking info via notes.
+Tu dong phat hien va import ma van don tu order notes cua WooCommerce — huu ich khi nhan vien hoac plugin khac them tracking qua notes.
 
-* Label-based detection: "Tracking: 9400...", "Tracking #: 1Z..."
-* Carrier pattern recognition: USPS (9400...), UPS (1Z...), FedEx (with keyword)
-* Duplicate protection built-in
-* Anti-loop: ignores system and self-generated notes
+* Nhan dien theo nhan: "Tracking: 9400...", "Tracking #: 1Z..."
+* Nhan dien theo mau so hang van chuyen: USPS (9400...), UPS (1Z...), FedEx (kem tu khoa)
+* Chong trung lap tich hop san
+* Chong vong lap: bo qua notes tu he thong va tu chinh plugin
+* Meta box Shipment Tracking tu dong cap nhat khi notes duoc them (khong can F5)
 
 = REST API =
 
@@ -55,26 +57,26 @@ Namespace: `/wp-json/wc-shipment-tracking/v3/`
 
 Endpoints:
 
-* `POST   /orders/{id}/shipment-trackings` — Add tracking
-* `GET    /orders/{id}/shipment-trackings` — List all tracking
-* `GET    /orders/{id}/shipment-trackings/{number}` — Get single
-* `DELETE /orders/{id}/shipment-trackings/{number}` — Delete tracking
+* `POST   /orders/{id}/shipment-trackings` — Them tracking
+* `GET    /orders/{id}/shipment-trackings` — Liet ke tat ca tracking
+* `GET    /orders/{id}/shipment-trackings/{number}` — Lay tracking cu the
+* `DELETE /orders/{id}/shipment-trackings/{number}` — Xoa tracking
 
-Authentication: WooCommerce consumer key / secret (Basic Auth).
+Xac thuc: WooCommerce consumer key / secret (Basic Auth).
 
 = Hooks & Filters =
 
 Actions:
-* `wcstt_tracking_added` — Fires after tracking is added (params: order_id, item array)
-* `wcstt_tracking_removed` — Fires after tracking is removed (params: order_id, tracking_number)
+* `wcstt_tracking_added` — Chay sau khi tracking duoc them (params: order_id, item array)
+* `wcstt_tracking_removed` — Chay sau khi tracking bi xoa (params: order_id, tracking_number)
 
 Filters:
-* `wcstt_tracking_providers` — Add/modify provider list
-* `wcstt_default_tracking_provider` — Set default provider
+* `wcstt_tracking_providers` — Them/sua danh sach hang van chuyen
+* `wcstt_default_tracking_provider` — Dat hang van chuyen mac dinh
 
-= Adding Custom Providers =
+= Them hang van chuyen tu dinh nghia =
 
-Use the `wcstt_tracking_providers` filter:
+Su dung filter `wcstt_tracking_providers`:
 
 `
 add_filter('wcstt_tracking_providers', function ($providers) {
@@ -86,9 +88,9 @@ add_filter('wcstt_tracking_providers', function ($providers) {
 });
 `
 
-= Programmatic Usage =
+= Su dung tu code (Programmatic) =
 
-Add tracking from another plugin:
+Them tracking tu plugin khac:
 
 `
 wcstt_add_tracking_number(
@@ -98,53 +100,54 @@ wcstt_add_tracking_number(
 );
 `
 
-== Installation ==
+== Cai dat ==
 
-1. Upload the `wc-shipment-tracking-tool` folder to `/wp-content/plugins/`.
-2. Activate through the Plugins menu.
-3. Go to any order edit screen → Shipment Tracking meta box to add tracking.
-4. (Optional) Go to WooCommerce → Settings → Shipment Tracking to configure PayPal sync and order notes parser.
+1. Upload thu muc `wc-shipment-tracking-tool` vao `/wp-content/plugins/`.
+2. Kich hoat qua menu Plugins.
+3. Vao bat ky trang chinh sua don hang nao → meta box Shipment Tracking de them tracking.
+4. (Tuy chon) Vao WooCommerce → Settings → Shipment Tracking de cau hinh dong bo PayPal va nhan dien order notes.
 
-= PayPal Setup =
+= Cau hinh PayPal =
 
-1. Go to [developer.paypal.com](https://developer.paypal.com/) and create a REST API app.
-2. Copy the Client ID and Client Secret.
-3. Go to WooCommerce → Settings → Shipment Tracking.
-4. Enable PayPal Sync, select environment (Sandbox/Live), paste credentials.
-5. Save. Tracking will now auto-sync to PayPal for all PayPal orders.
+1. Vao [developer.paypal.com](https://developer.paypal.com/) va tao REST API app.
+2. Copy Client ID va Client Secret.
+3. Vao WooCommerce → Settings → Shipment Tracking.
+4. Bat PayPal Sync, chon moi truong (Sandbox/Live), dan credentials.
+5. Save. Tracking se tu dong dong bo len PayPal cho tat ca don hang PayPal.
 
-== Frequently Asked Questions ==
+== Cau hoi thuong gap ==
 
-= Does this work with WooCommerce PayPal Payments (PPCP)? =
+= Co hoat dong voi WooCommerce PayPal Payments (PPCP) khong? =
 
-Yes. It uses `$order->get_transaction_id()` which all PayPal gateways populate.
+Co. Plugin su dung `$order->get_transaction_id()` ma tat ca cac gateway PayPal deu cung cap.
 
-= What happens with non-PayPal orders? =
+= Don hang khong thanh toan PayPal thi sao? =
 
-PayPal sync silently skips orders without a PayPal transaction ID. No errors.
+Dong bo PayPal tu dong bo qua don hang khong co PayPal transaction ID. Khong co loi.
 
-= Is it compatible with the official WC Shipment Tracking extension? =
+= Co tuong thich voi extension WC Shipment Tracking chinh thuc khong? =
 
-Yes. It uses the same `_wc_shipment_tracking_items` meta key, so data is interchangeable.
+Co. Plugin su dung cung meta key `_wc_shipment_tracking_items`, nen du lieu co the hoan doi.
 
-= Can I use both this plugin and the official extension? =
+= Co the dung dong thoi ca hai plugin khong? =
 
-You should use one or the other, not both. They write to the same meta key and would conflict on the admin UI.
+Nen dung mot trong hai, khong dung dong thoi. Ca hai ghi vao cung meta key va se xung dot tren giao dien admin.
 
 == Changelog ==
 
 = 1.1.0 =
-* New: PayPal Tracking Sync — auto-push tracking to PayPal API.
-* New: Order Notes Parser — auto-import tracking from order notes.
-* New: Settings page under WooCommerce → Settings → Shipment Tracking.
-* New: PayPal carrier mapping (USPS, FedEx, UPS, DHL, etc.).
-* New: OAuth2 token caching for PayPal API.
+* Moi: Dong bo Tracking len PayPal — tu dong day tracking len PayPal API.
+* Moi: Nhan dien Tracking tu Order Notes — tu dong import tracking tu order notes.
+* Moi: Trang cai dat tai WooCommerce → Settings → Shipment Tracking.
+* Moi: Map hang van chuyen PayPal (USPS, FedEx, UPS, DHL, v.v.).
+* Moi: Cache token OAuth2 cho PayPal API.
+* Moi: Meta box tu dong refresh khi them tracking tu order notes.
 
 = 1.0.0 =
-* Initial release.
-* Admin meta box with AJAX add/delete.
-* Email tracking block for all customer emails.
-* My Account order tracking table.
-* REST API v3 (create, list, get, delete).
-* HPOS compatibility.
-* 9 predefined US carriers.
+* Phien ban dau tien.
+* Meta box admin voi AJAX them/xoa.
+* Hien thi tracking trong tat ca email gui khach hang.
+* Bang tracking tren trang My Account.
+* REST API v3 (them, liet ke, lay, xoa).
+* Tuong thich HPOS.
+* 9 hang van chuyen My co san.
