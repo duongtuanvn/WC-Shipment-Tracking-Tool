@@ -101,8 +101,8 @@ class WCSTT_Settings extends WC_Settings_Page {
     public function output(): void {
         parent::output();
 
-        $screen = get_current_screen();
-        if (! $screen || $this->get_current_section() !== '') {
+        // Only show test button on the default (main) section.
+        if (method_exists($this, 'get_current_section') && $this->get_current_section() !== '') {
             return;
         }
 
