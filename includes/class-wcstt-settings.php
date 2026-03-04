@@ -172,21 +172,56 @@ class WCSTT_Settings extends WC_Settings_Page {
         // Clear cached token to force a fresh test.
         delete_transient('wcstt_paypal_token');
 
-        $response = wp_remote_post($base_url . '/v1/oauth2/token', [
+        $url   = $base_url . '/v1/oauth2/token';
+        $auth  = base64_encode($client_id . ':' . $client_secret);
+        $data  = null;
+        $code  = 0;
+        $via   = 'wp_remote_post';
+
+        // Try wp_remote_post first.
+        $response = wp_remote_post($url, [
             'headers' => [
-                'Authorization' => 'Basic ' . base64_encode($client_id . ':' . $client_secret),
+                'Authorization' => 'Basic ' . $auth,
                 'Content-Type'  => 'application/x-www-form-urlencoded',
             ],
             'body'    => 'grant_type=client_credentials',
-            'timeout' => 15,
+            'timeout' => 30,
         ]);
 
         if (is_wp_error($response)) {
-            wp_send_json_error(['message' => 'Network error: ' . $response->get_error_message()]);
-        }
+            // Fallback: use PHP cURL directly (bypasses WP HTTP API filters/blocks).
+            if (function_exists('curl_init')) {
+                $via = 'php_curl_fallback';
+                $ch  = curl_init($url);
+                curl_setopt_array($ch, [
+                    CURLOPT_POST           => true,
+                    CURLOPT_POSTFIELDS     => 'grant_type=client_credentials',
+                    CURLOPT_HTTPHEADER     => [
+                        'Authorization: Basic ' . $auth,
+                        'Content-Type: application/x-www-form-urlencoded',
+                    ],
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_TIMEOUT        => 30,
+                    CURLOPT_SSL_VERIFYPEER => true,
+                ]);
+                $body = curl_exec($ch);
+                $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                $err  = curl_error($ch);
+                curl_close($ch);
 
-        $code = wp_remote_retrieve_response_code($response);
-        $data = json_decode(wp_remote_retrieve_body($response), true);
+                if ($body === false || $code === 0) {
+                    wp_send_json_error(['message' => 'cURL fallback failed: ' . $err]);
+                }
+                $data = json_decode($body, true);
+            } else {
+                wp_send_json_error([
+                    'message' => 'wp_remote_post failed: ' . $response->get_error_message(),
+                ]);
+            }
+        } else {
+            $code = wp_remote_retrieve_response_code($response);
+            $data = json_decode(wp_remote_retrieve_body($response), true);
+        }
 
         if ($code === 200 && ! empty($data['access_token'])) {
             $app_id  = $data['app_id'] ?? 'N/A';
@@ -198,10 +233,11 @@ class WCSTT_Settings extends WC_Settings_Page {
 
             wp_send_json_success([
                 'message' => sprintf(
-                    'Connected! Environment: %s | App ID: %s | Token expires in %sh',
+                    'Connected! Environment: %s | App ID: %s | Token expires in %sh | via: %s',
                     strtoupper($env),
                     $app_id,
-                    $expires
+                    $expires,
+                    $via
                 ),
             ]);
         }

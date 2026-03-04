@@ -137,6 +137,7 @@ class WCSTT_PayPal_Sync {
 
     /**
      * Make an authenticated request to PayPal REST API.
+     * Falls back to PHP cURL if wp_remote_request fails.
      *
      * @return array|WP_Error Decoded response body or error.
      */
@@ -146,23 +147,28 @@ class WCSTT_PayPal_Sync {
             return $token;
         }
 
-        $args = [
-            'method'  => $method,
-            'headers' => [
-                'Authorization' => 'Bearer ' . $token,
-                'Content-Type'  => 'application/json',
-            ],
-            'timeout' => 30,
+        $url     = $this->get_base_url() . $endpoint;
+        $json    = ! empty($body) ? wp_json_encode($body) : '';
+        $headers = [
+            'Authorization' => 'Bearer ' . $token,
+            'Content-Type'  => 'application/json',
         ];
 
-        if (! empty($body)) {
-            $args['body'] = wp_json_encode($body);
-        }
-
-        $response = wp_remote_request($this->get_base_url() . $endpoint, $args);
+        // Try wp_remote_request first.
+        $response = wp_remote_request($url, [
+            'method'  => $method,
+            'headers' => $headers,
+            'body'    => $json,
+            'timeout' => 30,
+        ]);
 
         if (is_wp_error($response)) {
-            return new \WP_Error('wcstt_paypal_network', $response->get_error_message());
+            // Fallback: PHP cURL.
+            if (! function_exists('curl_init')) {
+                return new \WP_Error('wcstt_paypal_network', $response->get_error_message());
+            }
+
+            return $this->curl_request($method, $url, $headers, $json);
         }
 
         $code = wp_remote_retrieve_response_code($response);
@@ -178,6 +184,7 @@ class WCSTT_PayPal_Sync {
 
     /**
      * Get OAuth2 access token, cached in a transient.
+     * Falls back to PHP cURL if wp_remote_post fails.
      *
      * @return string|WP_Error Access token or error.
      */
@@ -194,9 +201,13 @@ class WCSTT_PayPal_Sync {
             return new \WP_Error('wcstt_paypal_config', 'PayPal Client ID or Secret is not configured.');
         }
 
-        $response = wp_remote_post($this->get_base_url() . '/v1/oauth2/token', [
+        $url  = $this->get_base_url() . '/v1/oauth2/token';
+        $auth = base64_encode($client_id . ':' . $client_secret);
+        $data = null;
+
+        $response = wp_remote_post($url, [
             'headers' => [
-                'Authorization' => 'Basic ' . base64_encode($client_id . ':' . $client_secret),
+                'Authorization' => 'Basic ' . $auth,
                 'Content-Type'  => 'application/x-www-form-urlencoded',
             ],
             'body'    => 'grant_type=client_credentials',
@@ -204,10 +215,34 @@ class WCSTT_PayPal_Sync {
         ]);
 
         if (is_wp_error($response)) {
-            return new \WP_Error('wcstt_paypal_auth', 'Token request failed: ' . $response->get_error_message());
-        }
+            // Fallback: PHP cURL.
+            if (! function_exists('curl_init')) {
+                return new \WP_Error('wcstt_paypal_auth', 'Token request failed: ' . $response->get_error_message());
+            }
 
-        $data = json_decode(wp_remote_retrieve_body($response), true);
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_POST           => true,
+                CURLOPT_POSTFIELDS     => 'grant_type=client_credentials',
+                CURLOPT_HTTPHEADER     => [
+                    'Authorization: Basic ' . $auth,
+                    'Content-Type: application/x-www-form-urlencoded',
+                ],
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT        => 15,
+                CURLOPT_SSL_VERIFYPEER => true,
+            ]);
+            $body = curl_exec($ch);
+            $err  = curl_error($ch);
+            curl_close($ch);
+
+            if ($body === false) {
+                return new \WP_Error('wcstt_paypal_auth', 'cURL fallback failed: ' . $err);
+            }
+            $data = json_decode($body, true);
+        } else {
+            $data = json_decode(wp_remote_retrieve_body($response), true);
+        }
 
         if (empty($data['access_token'])) {
             $err = $data['error_description'] ?? 'Invalid credentials';
@@ -255,5 +290,49 @@ class WCSTT_PayPal_Sync {
         }
 
         return $errors;
+    }
+
+    /**
+     * PHP cURL fallback for API requests when wp_remote_request fails.
+     *
+     * @return array|WP_Error Decoded response body or error.
+     */
+    private function curl_request(string $method, string $url, array $headers, string $body = ''): array|\WP_Error {
+        $ch = curl_init($url);
+
+        $curl_headers = [];
+        foreach ($headers as $key => $value) {
+            $curl_headers[] = $key . ': ' . $value;
+        }
+
+        curl_setopt_array($ch, [
+            CURLOPT_CUSTOMREQUEST  => $method,
+            CURLOPT_HTTPHEADER     => $curl_headers,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+
+        if ($body !== '') {
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+        }
+
+        $response = curl_exec($ch);
+        $code     = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err      = curl_error($ch);
+        curl_close($ch);
+
+        if ($response === false || $code === 0) {
+            return new \WP_Error('wcstt_paypal_network', 'cURL fallback failed: ' . $err);
+        }
+
+        $data = json_decode($response, true);
+
+        if ($code >= 400) {
+            $msg = $data['message'] ?? ($data['error_description'] ?? 'HTTP ' . $code);
+            return new \WP_Error('wcstt_paypal_api', $msg);
+        }
+
+        return is_array($data) ? $data : [];
     }
 }
