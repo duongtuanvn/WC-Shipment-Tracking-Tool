@@ -1,108 +1,77 @@
 # WC Shipment Tracking Tool
 
-Plugin WooCommerce quản lý mã vận đơn (tracking) với đồng bộ PayPal tự động và nhận diện tracking từ order notes.
+WooCommerce shipment tracking plugin with automatic PayPal sync and order notes parsing. Data-compatible with the official [WooCommerce Shipment Tracking](https://woocommerce.com/products/shipment-tracking/) extension.
 
-**Tương thích dữ liệu** với extension [WooCommerce Shipment Tracking](https://woocommerce.com/products/shipment-tracking/) chính thức (meta key `_wc_shipment_tracking_items`).
+## Features
 
----
+- Multiple tracking numbers per order
+- 9 built-in US carriers: USPS, FedEx, UPS, DHL, DHL eCommerce, Amazon Logistics, OnTrac, LaserShip, Stamps.com
+- Custom carriers with custom tracking URLs
+- Tracking info injected into all customer emails (HTML + plain text)
+- Tracking table on My Account order view
+- REST API (v3) compatible with the official extension
+- HPOS compatible
+- Duplicate tracking prevention
 
-## Tính năng chính
+## PayPal Sync
 
-- **Nhiều mã vận đơn** cho mỗi đơn hàng
-- **9 hãng vận chuyển Mỹ** có sẵn: USPS, FedEx, UPS, DHL, DHL eCommerce, Amazon Logistics, OnTrac, LaserShip, Stamps.com
-- **Hãng vận chuyển tùy chỉnh** với URL tracking riêng
-- **Tự động chèn tracking** vào tất cả email gửi khách hàng (HTML + plain text)
-- **Bảng tracking** trên trang My Account → Xem đơn hàng
-- **REST API (v3)** tương thích extension chính thức
-- **Tương thích HPOS** (High Performance Order Storage)
-- **Chống trùng lặp** mã vận đơn
-- **Mở rộng được** qua WordPress filters
+Automatically pushes tracking numbers to PayPal when added to an order — required for PayPal Seller Protection.
 
----
+- Uses PayPal REST API v1 (Shipping Trackers Batch)
+- OAuth2 authentication with token caching
+- Auto-maps carriers (USPS, FedEx, UPS, DHL, etc.)
+- Removes tracking from PayPal when deleted locally
+- Works with WooCommerce PayPal Payments (PPCP), PayPal Standard, and other PayPal gateways
+- Non-PayPal orders are silently skipped
 
-## Đồng bộ Tracking lên PayPal
+## Order Notes Parser
 
-Tự động đẩy mã vận đơn lên PayPal khi thêm vào đơn hàng. PayPal Seller Protection yêu cầu thông tin tracking — tính năng này xử lý tự động.
+Automatically detects and imports tracking numbers from order notes — useful when staff or other plugins add tracking via notes.
 
-| Tính năng | Chi tiết |
-|---|---|
-| API | PayPal REST API v1 (Shipping Trackers Batch) |
-| Xác thực | OAuth2 với cache token |
-| Hãng vận chuyển | Tự động map (USPS, FedEx, UPS, DHL, v.v.) |
-| Hủy tracking | Tự động hủy trên PayPal khi xóa cục bộ |
-| Gateway hỗ trợ | WooCommerce PayPal Payments (PPCP), PayPal Standard, và các gateway khác |
-| Đơn không PayPal | Tự động bỏ qua, không lỗi |
-| Log | Ghi trạng thái đồng bộ vào order notes (riêng tư) |
+- Recognizes labeled formats: `Tracking: 9400...`, `Tracking #: 1Z...`
+- Pattern-based detection: USPS (`9400...`), UPS (`1Z...`), FedEx (with keyword)
+- Built-in duplicate and loop prevention
 
----
+## Requirements
 
-## Nhận diện Tracking từ Order Notes
+- WordPress 6.4+
+- WooCommerce 8.0+
+- PHP 8.0+
 
-Tự động phát hiện và import mã vận đơn từ order notes — hữu ích khi nhân viên hoặc plugin khác thêm tracking qua notes.
+## Installation
 
-- **Nhận diện theo nhãn:** `Tracking: 9400...`, `Tracking #: 1Z...`
-- **Nhận diện theo mẫu số:** USPS (`9400...`), UPS (`1Z...`), FedEx (kèm từ khóa)
-- **Chống trùng lặp** tích hợp sẵn
-- **Chống vòng lặp:** bỏ qua notes từ hệ thống và từ chính plugin
-- **Cập nhật tức thì:** meta box Shipment Tracking tự động refresh khi notes được thêm
+1. Upload the plugin folder to `wp-content/plugins/`
+2. Activate via **Plugins** menu
+3. Open any order edit page to see the **Shipment Tracking** meta box
+4. (Optional) Go to **WooCommerce > Settings > Shipment Tracking** for PayPal sync and order notes settings
 
----
+### PayPal Setup
 
-## Cài đặt
-
-1. Upload thư mục `wc-shipment-tracking-tool` vào `/wp-content/plugins/`
-2. Kích hoạt qua menu **Plugins**
-3. Vào bất kỳ trang chỉnh sửa đơn hàng nào → meta box **Shipment Tracking** để thêm tracking
-4. *(Tùy chọn)* Vào **WooCommerce → Settings → Shipment Tracking** để cấu hình đồng bộ PayPal và nhận diện order notes
-
-### Cấu hình PayPal
-
-1. Vào [developer.paypal.com](https://developer.paypal.com/) và tạo REST API app
-2. Copy **Client ID** và **Client Secret**
-3. Vào **WooCommerce → Settings → Shipment Tracking**
-4. Bật **PayPal Sync**, chọn môi trường (Sandbox/Live), dán credentials
-5. **Save**. Tracking sẽ tự động đồng bộ lên PayPal cho tất cả đơn hàng PayPal
-
----
+1. Create a REST API app at [developer.paypal.com](https://developer.paypal.com/)
+2. Go to **WooCommerce > Settings > Shipment Tracking**
+3. Enable PayPal Sync, select environment (Sandbox/Live), paste Client ID and Secret
+4. Save — tracking will auto-sync to PayPal for all PayPal orders
 
 ## REST API
 
 **Namespace:** `/wp-json/wc-shipment-tracking/v3/`
 
-| Method | Endpoint | Mô tả |
+| Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/orders/{id}/shipment-trackings` | Thêm tracking |
-| `GET` | `/orders/{id}/shipment-trackings` | Liệt kê tất cả tracking |
-| `GET` | `/orders/{id}/shipment-trackings/{number}` | Lấy tracking cụ thể |
-| `DELETE` | `/orders/{id}/shipment-trackings/{number}` | Xóa tracking |
+| `POST` | `/orders/{id}/shipment-trackings` | Add tracking |
+| `GET` | `/orders/{id}/shipment-trackings` | List all tracking |
+| `GET` | `/orders/{id}/shipment-trackings/{number}` | Get specific tracking |
+| `DELETE` | `/orders/{id}/shipment-trackings/{number}` | Delete tracking |
 
-**Xác thực:** WooCommerce consumer key / secret (Basic Auth).
+**Auth:** WooCommerce consumer key/secret (Basic Auth).
 
----
-
-## Hooks & Filters
-
-### Actions
-
-| Hook | Mô tả | Params |
-|---|---|---|
-| `wcstt_tracking_added` | Sau khi tracking được thêm | `int $order_id`, `array $item` |
-| `wcstt_tracking_removed` | Sau khi tracking bị xóa | `int $order_id`, `string $tracking_number` |
-
-### Filters
-
-| Filter | Mô tả |
-|---|---|
-| `wcstt_tracking_providers` | Thêm/sửa danh sách hãng vận chuyển |
-| `wcstt_default_tracking_provider` | Đặt hãng vận chuyển mặc định |
-
----
-
-## Sử dụng từ code
-
-### Thêm hãng vận chuyển tùy chỉnh
+## Usage from Code
 
 ```php
+// Add tracking to an order
+wcstt_add_tracking_number($order_id, '9400111899223100012345', 'usps');
+
+// Add a custom carrier
 add_filter('wcstt_tracking_providers', function ($providers) {
     $providers['my_carrier'] = [
         'name' => 'My Carrier',
@@ -112,88 +81,54 @@ add_filter('wcstt_tracking_providers', function ($providers) {
 });
 ```
 
-### Thêm tracking từ plugin khác
+## Hooks
 
-```php
-wcstt_add_tracking_number(
-    $order_id,
-    '9400111899223100012345',
-    'usps'
-);
-```
+### Actions
 
----
+| Hook | Params |
+|---|---|
+| `wcstt_tracking_added` | `int $order_id`, `array $item` |
+| `wcstt_tracking_removed` | `int $order_id`, `string $tracking_number` |
 
-## Câu hỏi thường gặp
+### Filters
 
-**Có hoạt động với WooCommerce PayPal Payments (PPCP) không?**
-> Có. Plugin sử dụng `$order->get_transaction_id()` mà tất cả các gateway PayPal đều cung cấp.
+| Filter | Description |
+|---|---|
+| `wcstt_tracking_providers` | Add/modify carrier list |
+| `wcstt_default_tracking_provider` | Set default carrier |
 
-**Đơn hàng không thanh toán PayPal thì sao?**
-> Đồng bộ PayPal tự động bỏ qua. Không có lỗi.
-
-**Có tương thích với extension WC Shipment Tracking chính thức không?**
-> Có. Cùng meta key `_wc_shipment_tracking_items`, dữ liệu hoán đổi được.
-
-**Có thể dùng đồng thời cả hai plugin không?**
-> Nên dùng một trong hai. Cả hai ghi vào cùng meta key và sẽ xung đột trên giao diện admin.
-
----
-
-## Cấu trúc files
+## Project Structure
 
 ```
 wc-shipment-tracking-tool/
-├── wc-shipment-tracking-tool.php        # Plugin chính, global helper
-├── uninstall.php                        # Cleanup khi gỡ plugin
-├── readme.txt                           # WordPress plugin readme
+├── wc-shipment-tracking-tool.php           # Main plugin file, global helper
+├── uninstall.php                           # Cleanup on uninstall
 ├── includes/
-│   ├── class-wcstt-loader.php           # Singleton loader
-│   ├── class-wcstt-tracking-repository.php  # CRUD tracking data (HPOS-safe)
-│   ├── class-wcstt-providers.php        # Registry 9 hãng vận chuyển + custom
-│   ├── class-wcstt-admin-meta-box.php   # Admin meta box (AJAX add/delete)
-│   ├── class-wcstt-email-tracking.php   # Chèn tracking vào email
-│   ├── class-wcstt-frontend-tracking.php # Hiển thị tracking trên My Account
-│   ├── class-wcstt-rest-controller.php  # REST API v3
-│   ├── class-wcstt-settings.php         # Trang cài đặt WooCommerce
-│   ├── class-wcstt-paypal-sync.php      # Đồng bộ PayPal
-│   └── class-wcstt-order-notes-parser.php # Nhận diện tracking từ notes
+│   ├── class-wcstt-loader.php              # Singleton loader
+│   ├── class-wcstt-tracking-repository.php # CRUD tracking data (HPOS-safe)
+│   ├── class-wcstt-providers.php           # 9 carriers + custom
+│   ├── class-wcstt-admin-meta-box.php      # Admin meta box (AJAX add/delete)
+│   ├── class-wcstt-email-tracking.php      # Inject tracking into emails
+│   ├── class-wcstt-frontend-tracking.php   # My Account tracking table
+│   ├── class-wcstt-rest-controller.php     # REST API v3
+│   ├── class-wcstt-settings.php            # WooCommerce settings tab
+│   ├── class-wcstt-paypal-sync.php         # PayPal sync
+│   └── class-wcstt-order-notes-parser.php  # Tracking detection from notes
 ├── assets/
 │   ├── css/wcstt-admin.css
 │   └── js/wcstt-admin.js
 └── templates/
-    └── emails/tracking-info.php         # Template email tracking
+    └── emails/tracking-info.php            # Email tracking template
 ```
 
----
+## Compatibility Note
 
-## Changelog
-
-### 1.1.0
-- **Mới:** Đồng bộ Tracking lên PayPal (PayPal REST API v1)
-- **Mới:** Nhận diện Tracking từ Order Notes
-- **Mới:** Trang cài đặt tại WooCommerce → Settings → Shipment Tracking
-- **Mới:** Map hãng vận chuyển PayPal (USPS, FedEx, UPS, DHL, v.v.)
-- **Mới:** Cache token OAuth2 cho PayPal API
-- **Mới:** Meta box tự động refresh khi thêm tracking từ order notes
-
-### 1.0.0
-- Phiên bản đầu tiên
-- Meta box admin với AJAX thêm/xóa
-- Hiển thị tracking trong tất cả email gửi khách hàng
-- Bảng tracking trên trang My Account
-- REST API v3 (thêm, liệt kê, lấy, xóa)
-- Tương thích HPOS
-- 9 hãng vận chuyển Mỹ có sẵn
-
----
-
-## Yêu cầu
-
-- WordPress 6.4+
-- WooCommerce 8.0+
-- PHP 8.0+
+This plugin uses the same meta key (`_wc_shipment_tracking_items`) as the official WooCommerce Shipment Tracking extension. Data is interchangeable, but **do not run both plugins simultaneously** — they will conflict on the admin UI.
 
 ## License
 
 GPL-2.0-or-later
+
+## Author
+
+**Tuan Duong** — [tuan.digital](https://tuan.digital) | [@duongtuanvn](https://github.com/duongtuanvn)
